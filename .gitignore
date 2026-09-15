@@ -1,0 +1,15 @@
+Backend/__pycache__/
+Backend/**/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.env
+.env.local
+.env.*.local
+Backend/.env
+../.gitignore
