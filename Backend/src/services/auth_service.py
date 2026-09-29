@@ -52,8 +52,8 @@ async def google_login_user(id_token_str: str) -> TokenResponseSchema:
         idinfo = google_id_token.verify_oauth2_token(
             id_token_str, google_requests.Request(), settings.google_client_id
         )
-    except ValueError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid Google token")
+    except ValueError as e:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, f"Invalid Google token: {str(e)}")
 
     email = idinfo["email"]
     name = idinfo.get("name", email.split("@")[0])

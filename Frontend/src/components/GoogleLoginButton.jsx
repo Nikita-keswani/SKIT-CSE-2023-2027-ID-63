@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
-const GOOGLE_CLIENT_ID = "your-google-client-id.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "590593386956-pg8gmhjthil118tkpjnof85j9hijvbjj.apps.googleusercontent.com";
 
 // Renders Google's own "Sign in with Google" button and hands the
 // resulting credential (a signed ID token) back to onSuccess.
