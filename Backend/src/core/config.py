@@ -12,8 +12,12 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
  
     google_client_id: str = ""
- 
+
     frontend_origin: str = "http://localhost:5173"
+
+    # PDF RAG settings
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
  
     class Config:
         env_file = ".env"

@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
 from app.routes.auth_routes import router as auth_router
+from app.routes.notes_routes import router as notes_router
+
 
 app = FastAPI(title="Auth API")
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,7 +17,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Existing authentication routes
 app.include_router(auth_router)
+
+# PDF RAG routes
+app.include_router(notes_router)
 
 
 @app.get("/")
