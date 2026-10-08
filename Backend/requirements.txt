@@ -13,6 +13,7 @@ google-auth>=2.34.0
 python-multipart>=0.0.9
 requests>=2.32.0
 google-generativeai>=0.8.0
+<<<<<<< HEAD
 
 
 fastapi
@@ -38,3 +39,9 @@ pypdf
 python-docx
 
 tenacity
+=======
+chromadb>=1.0.0
+sentence-transformers>=3.0.0
+pymupdf>=1.24.0
+groq>=0.30.0
+>>>>>>> origin/main
