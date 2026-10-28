@@ -5,3 +5,5 @@ __pycache__/
 
 data/uploads/
 data/chroma/
+data/pdf_rag/
+data/notes_summarizer/
