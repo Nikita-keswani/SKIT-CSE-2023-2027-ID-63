@@ -1,20 +1,31 @@
 import pymupdf
 
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.documents import Document
 
 def load_pdf(file_path: str):
     document = pymupdf.open(file_path)
 
-    pages = []
+class PDFDocumentLoader:
 
-    for page_number, page in enumerate(document, start=1):
-        text = page.get_text("text").strip()
+    def load(self, file_path: str) -> list[Document]:
 
-        if text:
-            pages.append({
-                "page": page_number,
-                "text": text
-            })
+        print(f"[PDF LOADER] Loading: {file_path}")
 
-    document.close()
+        path = Path(file_path)
 
-    return pages
+        if not path.exists():
+            raise FileNotFoundError(
+                f"PDF file not found: {file_path}"
+            )
+
+        loader = PyPDFLoader(str(path))
+
+        documents = loader.load()
+
+        print(
+            f"[PDF LOADER] Loaded "
+            f"{len(documents)} pages"
+        )
+
+        return documents

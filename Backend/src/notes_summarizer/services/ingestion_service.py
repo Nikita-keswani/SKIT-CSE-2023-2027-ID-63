@@ -1,66 +1,108 @@
-from src.notes_summarizer.loaders.pdf_loader import load_pdf
-from src.notes_summarizer.rag.embeddings import create_embeddings
+from pathlib import Path
+
+from src.notes_summarizer.loaders.pdf_loader import (
+    PDFDocumentLoader
+)
+from src.notes_summarizer.loaders.docx_loader import (
+    DOCXDocumentLoader
+)
+from src.notes_summarizer.loaders.text_loader import (
+    TextDocumentLoader
+)
+from src.notes_summarizer.rag.pipeline import (
+    RAGPipeline
+)
 from src.notes_summarizer.rag.vector_store import (
-    create_collection,
-    add_chunks
+    VectorStoreService
 )
 
 
-def create_chunks(pages):
-    chunks = []
+class IngestionService:
 
-    chunk_size = 1000
-    overlap = 200
+    def __init__(self) -> None:
 
-    for page in pages:
-        text = page["text"]
+        self.pdf_loader = PDFDocumentLoader()
+        self.docx_loader = DOCXDocumentLoader()
+        self.text_loader = TextDocumentLoader()
 
-        start = 0
+        self.rag_pipeline = RAGPipeline()
+        self.vector_store = VectorStoreService()
 
-        while start < len(text):
-            end = start + chunk_size
+        print("[INGESTION] Service initialized")
 
-            chunk = text[start:end].strip()
+    def _load_file(
+        self,
+        file_path: str
+    ):
 
-            if chunk:
-                chunks.append({
-                    "text": chunk,
-                    "page": page["page"]
-                })
-
-            start += chunk_size - overlap
-
-    return chunks
-
-
-def ingest_pdf(file_path, document_id):
-    pages = load_pdf(file_path)
-
-    if not pages:
-        raise ValueError(
-            "No readable text found in PDF."
+        extension = (
+            Path(file_path)
+            .suffix
+            .lower()
         )
 
-    chunks = create_chunks(pages)
+        print(
+            f"[INGESTION] File type: {extension}"
+        )
 
-    texts = [
-        chunk["text"]
-        for chunk in chunks
-    ]
+        if extension == ".pdf":
+            return self.pdf_loader.load(
+                file_path
+            )
 
-    embeddings = create_embeddings(texts)
+        if extension == ".docx":
+            return self.docx_loader.load(
+                file_path
+            )
 
-    collection = create_collection(document_id)
+        if extension == ".txt":
+            return self.text_loader.load(
+                file_path
+            )
 
-    add_chunks(
-        collection,
-        chunks,
-        embeddings,
-        document_id
-    )
+        raise ValueError(
+            "Unsupported file type. "
+            "Use PDF, DOCX or TXT."
+        )
 
-    return {
-        "pages": len(pages),
-        "chunks": len(chunks),
-        "collection": collection.name
-    }
+    def ingest(
+        self,
+        file_path: str,
+        document_id: str,
+        user_id: str
+    ) -> int:
+
+        print(
+            "[INGESTION] Starting document ingestion"
+        )
+
+        documents = self._load_file(
+            file_path
+        )
+
+        if not documents:
+            raise ValueError(
+                "No text could be extracted."
+            )
+
+        chunks = (
+            self.rag_pipeline
+            .split_documents(documents)
+        )
+
+        if not chunks:
+            raise ValueError(
+                "No chunks were created."
+            )
+
+        self.vector_store.add_documents(
+            chunks,
+            document_id=document_id,
+            user_id=user_id
+        )
+
+        print(
+            "[INGESTION] Ingestion completed"
+        )
+
+        return len(chunks)

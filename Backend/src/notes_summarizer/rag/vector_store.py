@@ -1,44 +1,95 @@
-import os
-import chromadb
+from pathlib import Path
 
+from langchain_chroma import Chroma
 
-CHROMA_PATH = "./data/chroma"
-
-os.makedirs(CHROMA_PATH, exist_ok=True)
-
-
-client = chromadb.PersistentClient(
-    path=CHROMA_PATH
+from src.core.config import settings
+from src.notes_summarizer.rag.embeddings import (
+    EmbeddingService
 )
 
 
-def create_collection(document_id):
-    collection_name = "pdf_" + document_id.replace("-", "")
+class VectorStoreService:
 
-    return client.create_collection(
-        name=collection_name
-    )
+    def __init__(self) -> None:
 
+        print("[VECTOR DB] Initializing Chroma...")
 
-def get_collection(collection_name):
-    return client.get_collection(
-        name=collection_name
-    )
+        Path(settings.CHROMA_DIR).mkdir(
+            parents=True,
+            exist_ok=True
+        )
 
+        embedding_service = EmbeddingService()
 
-def add_chunks(collection, chunks, embeddings, document_id):
-    collection.add(
-        ids=[
-            f"{document_id}_{i}"
-            for i in range(len(chunks))
-        ],
-        documents=[
-            chunk["text"]
-            for chunk in chunks
-        ],
-        embeddings=embeddings,
-        metadatas=[
-            {"page": chunk["page"]}
-            for chunk in chunks
-        ]
-    )
+        self.vector_store = Chroma(
+            collection_name="notes_documents",
+            embedding_function=(
+                embedding_service.get_embeddings()
+            ),
+            persist_directory=settings.CHROMA_DIR
+        )
+
+        print("[VECTOR DB] Chroma initialized")
+
+    def add_documents(
+        self,
+        documents,
+        document_id: str,
+        user_id: str
+    ) -> list[str]:
+
+        print(
+            f"[VECTOR DB] Adding documents "
+            f"for document_id={document_id}"
+        )
+
+        for index, document in enumerate(documents):
+
+            document.metadata["document_id"] = (
+                document_id
+            )
+
+            document.metadata["user_id"] = (
+                user_id
+            )
+
+            document.metadata["chunk_id"] = (
+                f"{document_id}_{index}"
+            )
+
+        ids = self.vector_store.add_documents(
+            documents
+        )
+
+        print(
+            f"[VECTOR DB] Added {len(ids)} chunks"
+        )
+
+        return ids
+
+    def delete_document(
+        self,
+        document_id: str
+    ) -> None:
+
+        print(
+            f"[VECTOR DB] Deleting document "
+            f"{document_id}"
+        )
+
+        results = self.vector_store.get(
+            where={
+                "document_id": document_id
+            }
+        )
+
+        ids = results.get("ids", [])
+
+        if ids:
+            self.vector_store.delete(
+                ids=ids
+            )
+
+        print(
+            f"[VECTOR DB] Deleted {len(ids)} chunks"
+        )

@@ -1,24 +1,27 @@
-from sentence_transformers import SentenceTransformer
+from langchain_huggingface import HuggingFaceEmbeddings
+
+from src.core.config import settings
 
 
-embedding_model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
+class EmbeddingService:
 
+    def __init__(self) -> None:
 
-def create_embeddings(texts):
-    embeddings = embedding_model.encode(
-        texts,
-        normalize_embeddings=True
-    )
+        print("[EMBEDDING] Loading embedding model...")
 
-    return embeddings.tolist()
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=settings.EMBEDDING_MODEL,
+            model_kwargs={
+                "device": "cpu"
+            },
+            encode_kwargs={
+                "normalize_embeddings": True
+            }
+        )
 
+        print(
+            "[EMBEDDING] Embedding model loaded successfully"
+        )
 
-def create_query_embedding(question):
-    embedding = embedding_model.encode(
-        [question],
-        normalize_embeddings=True
-    )
-
-    return embedding.tolist()
+    def get_embeddings(self) -> HuggingFaceEmbeddings:
+        return self.embeddings

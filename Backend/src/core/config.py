@@ -21,6 +21,17 @@ class Settings(BaseSettings):
 
     # Frontend
     frontend_origin: str = "http://localhost:5173"
+    GROQ_API_KEY: str
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
+
+    CHROMA_DIR: str = "data/chroma"
+
+    EMBEDDING_MODEL: str = (
+        "sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    CHUNK_SIZE: int = 800
+    CHUNK_OVERLAP: int = 120
 
     # Existing Groq configuration
     groq_api_key: str = ""

@@ -13,7 +13,35 @@ google-auth>=2.34.0
 python-multipart>=0.0.9
 requests>=2.32.0
 google-generativeai>=0.8.0
+<<<<<<< HEAD
+
+
+fastapi
+uvicorn[standard]
+python-multipart
+
+pydantic
+pydantic-settings
+python-dotenv
+
+langchain
+langchain-core
+langchain-community
+langchain-groq
+langchain-huggingface
+langchain-chroma
+langchain-text-splitters
+
+chromadb
+sentence-transformers
+
+pypdf
+python-docx
+
+tenacity
+=======
 chromadb>=1.0.0
 sentence-transformers>=3.0.0
 pymupdf>=1.24.0
 groq>=0.30.0
+>>>>>>> origin/main

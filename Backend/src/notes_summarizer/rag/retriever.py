@@ -1,26 +1,59 @@
-from src.notes_summarizer.rag.embeddings import create_query_embedding
-from src.notes_summarizer.rag.vector_store import get_collection
+from langchain_core.documents import Document
+
+from src.core.config import settings
+from src.notes_summarizer.rag.vector_store import (
+    VectorStoreService
+)
 
 
-def retrieve_chunks(collection_name, question, top_k=5):
-    collection = get_collection(collection_name)
+class RetrieverService:
 
-    query_embedding = create_query_embedding(question)
+    def __init__(self) -> None:
 
-    results = collection.query(
-        query_embeddings=query_embedding,
-        n_results=top_k
-    )
+        self.vector_store_service = (
+            VectorStoreService()
+        )
 
-    documents = results["documents"][0]
-    metadatas = results["metadatas"][0]
+        print("[RETRIEVER] Retriever initialized")
 
-    sources = []
+    def retrieve(
+        self,
+        question: str,
+        document_id: str,
+        user_id: str
+    ) -> list[Document]:
 
-    for document, metadata in zip(documents, metadatas):
-        sources.append({
-            "content": document,
-            "page": metadata["page"]
-        })
+        print(
+            f"[RETRIEVER] Question: {question}"
+        )
 
-    return sources
+        print(
+            f"[RETRIEVER] Document ID: "
+            f"{document_id}"
+        )
+
+        results = (
+            self.vector_store_service
+            .vector_store
+            .similarity_search(
+                question,
+                k=settings.TOP_K,
+                filter={
+                    "$and": [
+                        {
+                            "document_id": document_id
+                        },
+                        {
+                            "user_id": user_id
+                        }
+                    ]
+                }
+            )
+        )
+
+        print(
+            f"[RETRIEVER] Retrieved "
+            f"{len(results)} chunks"
+        )
+
+        return results
