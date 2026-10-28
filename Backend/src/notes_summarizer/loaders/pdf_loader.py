@@ -1,8 +1,8 @@
-import fitz
+import pymupdf
 
 
 def load_pdf(file_path: str):
-    document = fitz.open(file_path)
+    document = pymupdf.open(file_path)
 
     pages = []
 
