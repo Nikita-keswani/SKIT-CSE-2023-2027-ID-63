@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import Dashboard from "./components/Dashboard";
 import { fetchCurrentUser, getToken, clearToken } from "./api/auth";
 import "./auth.css";
+import "./styles.css";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -29,18 +31,17 @@ export default function App() {
   }
 
   if (checkingSession) {
-    return <p>Loading...</p>;
-  }
-
-  if (user) {
     return (
-      <div className="auth-card">
-        <h1>Welcome, {user.name}</h1>
-        <p>{user.email}</p>
-        <p>Signed in via {user.auth_provider}</p>
-        <button onClick={handleLogout}>Log out</button>
+      <div className="auth-loading-screen">
+        <div className="auth-spinner" />
+        <p>Loading your study space...</p>
       </div>
     );
+  }
+
+  // Once user logs in, show the full Studywise dashboard (Overview, Notes Summarizer, PDF RAG, Library)
+  if (user) {
+    return <Dashboard user={user} onLogout={handleLogout} />;
   }
 
   return view === "login" ? (
