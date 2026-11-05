@@ -13,14 +13,15 @@ class LoginSchema(BaseModel):
 
 
 class GoogleLoginSchema(BaseModel):
-    id_token: str  # the credential returned by Google Sign-In on the frontend
+    id_token: str
 
 
 class UserOutSchema(BaseModel):
     id: str
     name: str
     email: EmailStr
-    auth_provider: str  # "password" or "google"
+    auth_provider: str
+    role: str = "student"
 
 
 class TokenResponseSchema(BaseModel):

@@ -11,7 +11,15 @@ from src.services import auth_service
 from app.middleware.auth_middleware import get_current_user
  
 router = APIRouter(prefix="/auth", tags=["auth"])
- 
+@router.get("/me", response_model=UserOutSchema)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return {
+        "id": str(current_user["_id"]),
+        "name": current_user["name"],
+        "email": current_user["email"],
+        "auth_provider": current_user.get("auth_provider", "password"),
+        "role": current_user.get("role", "student")
+    }
  
 @router.post("/signup", response_model=TokenResponseSchema)
 async def signup(payload: SignupSchema):
