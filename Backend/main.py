@@ -9,12 +9,19 @@ from app.routes.pdf_rag_routes import router as pdf_rag_router
 app = FastAPI(title="Auth API")
 
 app.add_middleware(
-CORSMiddleware,
-allow_origins=[settings.frontend_origin],
-allow_credentials=True,
-allow_methods=["*"],
-allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=[
+        settings.frontend_origin,
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://localhost:5174",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
 
 # Authentication routes
 

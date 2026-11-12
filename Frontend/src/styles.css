@@ -1,0 +1,26 @@
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff66;
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+
+.thinking-text {
+  font-style: italic;
+  color: #9a99af !important;
+}
+
+.citation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  background: #eeeaff;
+  color: #6654cf;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+}
