@@ -13,6 +13,26 @@
 .auth-spinner{width:36px;height:36px;border:3px solid #e8e5fb;border-top-color:#7664dc;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* Summary Results & AI Integration */
+.summary-loading-state{padding:50px 15px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;width:100%}
+.summary-loading-state h4{font-family:Manrope,sans-serif;font-size:14px;color:#35334c;margin:0}
+.summary-loading-state p{font-size:11px;color:#8f8ea3;line-height:1.6;max-width:280px;margin:0}
+.result-content-wrap{display:flex;flex-direction:column;gap:16px;width:100%;text-align:left;animation:fadeIn .25s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.result-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid #f0f0f6}
+.result-title-row h4{font-family:Manrope,sans-serif;font-size:15px;color:#2c2b42;margin:0}
+.result-tag{font-size:9px;background:#f0edff;color:#6f5bd1;padding:4px 8px;border-radius:6px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.summary-block{display:flex;flex-direction:column;gap:6px}
+.summary-block-label{font-size:9px;font-weight:700;letter-spacing:1px;color:#9b99b0;text-transform:uppercase}
+.summary-paragraph{font-size:11.5px;line-height:1.75;color:#49485f;margin:0;white-space:pre-wrap;background:#faf9ff;border:1px solid #eeebfb;border-radius:9px;padding:12px 14px}
+.summary-keypoints-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.summary-keypoints-list li{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6;color:#4c4b62;background:#fff;border:1px solid #ecebf6;border-radius:8px;padding:8px 12px}
+.summary-keypoints-list .bullet-dot{color:#7664dc;font-size:14px;line-height:1;font-weight:bold}
+.terms-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.term-badge{font-size:10px;background:#eef7f3;color:#2f8b6c;border:1px solid #d2eedf;padding:4px 9px;border-radius:6px;font-weight:600}
+.result-actions{display:flex;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid #f0f0f6}
+.button-spinner{width:14px;height:14px;border:2px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
 @media(min-width:1500px){.page-content{padding-top:48px}.welcome-row{min-height:190px}.tool-card{min-height:225px}.page-content{padding-left:50px;padding-right:50px}}
 @media(max-width:1100px){.sidebar{width:220px}.main-area{margin-left:220px}.page-content{padding:30px 25px}.topbar{padding:0 25px}.welcome-art{margin-right:0;transform:scale(.88);transform-origin:right center}.workspace-grid{grid-template-columns:minmax(0,1fr) minmax(250px,.85fr)}.chat-layout{grid-template-columns:240px minmax(0,1fr)}.tool-card{padding:17px}.bottom-grid{grid-template-columns:1.25fr 1fr}}
 @media(max-width:800px){.sidebar{transform:translateX(-100%);transition:transform .22s;width:255px;box-shadow:none}.sidebar.sidebar-open{transform:translateX(0);box-shadow:10px 0 40px #29204419}.mobile-scrim{display:block;position:fixed;inset:0;z-index:15;background:#25203955;border:0}.sidebar-close{display:grid;margin-left:auto}.main-area{margin-left:0}.mobile-menu{display:grid}.topbar{height:58px;padding:0 18px}.breadcrumb{gap:7px}.topbar-right{gap:10px}.ready-text,.status-dot{display:none}.page-content{padding:25px 20px}.welcome-row{min-height:160px}.welcome-row h1{font-size:30px}.welcome-art{transform:scale(.78);margin-right:-12px}.tool-card{min-height:230px}.bottom-grid{grid-template-columns:1fr 1fr}.workspace-grid{grid-template-columns:1fr}.result-panel{min-height:410px}.chat-layout{grid-template-columns:1fr}.pdf-panel{display:grid;grid-template-columns:1fr 1fr;gap:0 13px}.pdf-panel>.panel-heading,.pdf-panel>.source-section{grid-column:1/-1}.pdf-dropzone{margin-top:14px}.pdf-panel>.primary-button{align-self:center}.pdf-info{align-self:center}.source-section{margin-top:15px}.conversation-panel{min-height:500px}}
