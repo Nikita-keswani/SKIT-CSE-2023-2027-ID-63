@@ -25,7 +25,9 @@ import {
   Copy,
   Check,
   Menu,
+  Download,
 } from "lucide-react";
+import { uploadNotes, summarizeDocument, summarizeText } from "../api/notes";
 import "../styles.css";
 
 const initialHistory = [
@@ -42,10 +44,14 @@ export default function Dashboard({ user, onLogout }) {
   const [summaryStyle, setSummaryStyle] = useState("Study notes");
   const [summaryText, setSummaryText] = useState("");
   const [summaryReady, setSummaryReady] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryResult, setSummaryResult] = useState(null);
+
   const [pdfFile, setPdfFile] = useState(null);
   const [indexed, setIndexed] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
+
   const [toast, setToast] = useState("");
   const [search, setSearch] = useState("");
   const summaryInput = useRef(null);
@@ -53,7 +59,7 @@ export default function Dashboard({ user, onLogout }) {
 
   const notify = (s) => {
     setToast(s);
-    setTimeout(() => setToast(""), 2500);
+    setTimeout(() => setToast(""), 3000);
   };
 
   const choosePage = (p) => {
@@ -65,6 +71,7 @@ export default function Dashboard({ user, onLogout }) {
     if (f) {
       setSummaryFile(f);
       setSummaryReady(false);
+      setSummaryResult(null);
     }
   };
 
@@ -76,12 +83,42 @@ export default function Dashboard({ user, onLogout }) {
     }
   };
 
-  const generateSummary = () => {
+  const generateSummary = async () => {
     if (!summaryFile && !summaryText.trim()) {
       return notify("Upload a file or paste your notes first.");
     }
-    setSummaryReady(true);
-    notify("Summary generated based on your settings.");
+
+    setIsSummarizing(true);
+    setSummaryReady(false);
+    notify("Analyzing notes with AI...");
+
+    const lengthMap = {
+      Brief: 180,
+      Balanced: 400,
+      Detailed: 750,
+    };
+    const maxWords = lengthMap[summaryLength] || 400;
+
+    try {
+      let result;
+      if (summaryFile) {
+        notify(`Uploading ${summaryFile.name}...`);
+        const uploadRes = await uploadNotes(summaryFile);
+        notify("Generating structured summary...");
+        result = await summarizeDocument(uploadRes.document_id, maxWords, summaryStyle);
+      } else {
+        result = await summarizeText(summaryText, maxWords, summaryStyle);
+      }
+
+      setSummaryResult(result);
+      setSummaryReady(true);
+      notify("Summary generated successfully!");
+    } catch (err) {
+      console.error("Summarizer error:", err);
+      notify(err.message || "Failed to generate summary. Please check backend.");
+    } finally {
+      setIsSummarizing(false);
+    }
   };
 
   const indexPdf = () => {
@@ -112,17 +149,53 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   const copySummary = async () => {
+    if (!summaryResult) {
+      notify("No summary available to copy.");
+      return;
+    }
+    const fullText = [
+      `# ${summaryResult.title}`,
+      "",
+      "## Summary",
+      summaryResult.summary,
+      "",
+      "## Key Points",
+      ...(summaryResult.key_points || []).map((pt) => `• ${pt}`),
+      "",
+      "## Important Terms",
+      ...(summaryResult.important_terms || []).map((tm) => `• ${tm}`),
+    ].join("\n");
+
     try {
-      await navigator.clipboard.writeText(
-        summaryText ||
-          "Generated summary points for " +
-            (summaryFile ? summaryFile.name : "your notes") +
-            "."
-      );
-      notify("Copied to clipboard");
+      await navigator.clipboard.writeText(fullText);
+      notify("Copied summary to clipboard!");
     } catch {
       notify("Copy is not available in this browser.");
     }
+  };
+
+  const downloadSummary = () => {
+    if (!summaryResult) return;
+    const fullText = [
+      `Title: ${summaryResult.title}`,
+      `Format: ${summaryStyle} | Length: ${summaryLength}`,
+      `Generated: ${new Date().toLocaleString()}`,
+      "\n================ SUMMARY ================\n",
+      summaryResult.summary,
+      "\n============== KEY POINTS ==============\n",
+      ...(summaryResult.key_points || []).map((pt) => `• ${pt}`),
+      "\n============ IMPORTANT TERMS ============\n",
+      ...(summaryResult.important_terms || []).map((tm) => `• ${tm}`),
+    ].join("\n");
+
+    const blob = new Blob([fullText], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${(summaryResult.title || "notes_summary").replace(/[^a-zA-Z0-9_-]/g, "_")}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    notify("Notes downloaded as text file!");
   };
 
   const getInitials = (name) => {
@@ -648,9 +721,18 @@ export default function Dashboard({ user, onLogout }) {
                   <button
                     className="primary-button full-button"
                     onClick={generateSummary}
+                    disabled={isSummarizing || (!summaryFile && !summaryText.trim())}
                   >
-                    <Sparkles size={17} /> Generate summary{" "}
-                    <ChevronRight size={17} />
+                    {isSummarizing ? (
+                      <>
+                        <div className="button-spinner" /> Generating summary...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={17} /> Generate summary{" "}
+                        <ChevronRight size={17} />
+                      </>
+                    )}
                   </button>
                   <p className="privacy-note">
                     <span /> Summarize lecture notes & study materials easily.
@@ -666,33 +748,63 @@ export default function Dashboard({ user, onLogout }) {
                       <h3>Your summary</h3>
                       <p>Key ideas, made clearer.</p>
                     </div>
-                    <span className="preview-chip">PREVIEW</span>
+                    <span className="preview-chip">
+                      {isSummarizing ? "GENERATING..." : summaryReady ? "READY" : "AI"}
+                    </span>
                   </div>
-                  {summaryReady ? (
-                    <div className="result-body">
-                      <div className="result-empty-icon">
-                        <Sparkles size={23} />
+                  {isSummarizing ? (
+                    <div className="summary-loading-state">
+                      <div className="auth-spinner" />
+                      <h4>Generating summary with AI...</h4>
+                      <p>Analyzing document, extracting key concepts, and structuring your notes.</p>
+                    </div>
+                  ) : summaryReady && summaryResult ? (
+                    <div className="result-body" style={{ alignItems: "stretch", textAlign: "left", padding: "18px 0" }}>
+                      <div className="result-content-wrap">
+                        <div className="result-title-row">
+                          <h4>{summaryResult.title}</h4>
+                          <span className="result-tag">{summaryStyle}</span>
+                        </div>
+
+                        <div className="summary-block">
+                          <label className="summary-block-label">SUMMARY</label>
+                          <p className="summary-paragraph">{summaryResult.summary}</p>
+                        </div>
+
+                        {summaryResult.key_points && summaryResult.key_points.length > 0 && (
+                          <div className="summary-block">
+                            <label className="summary-block-label">KEY POINTS</label>
+                            <ul className="summary-keypoints-list">
+                              {summaryResult.key_points.map((pt, idx) => (
+                                <li key={idx}>
+                                  <span className="bullet-dot">•</span>
+                                  <span>{pt}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {summaryResult.important_terms && summaryResult.important_terms.length > 0 && (
+                          <div className="summary-block">
+                            <label className="summary-block-label">IMPORTANT TERMS</label>
+                            <div className="terms-wrap">
+                              {summaryResult.important_terms.map((t, idx) => (
+                                <span key={idx} className="term-badge">{t}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="result-actions">
+                          <button className="secondary-button" onClick={copySummary}>
+                            <Copy size={15} /> Copy summary
+                          </button>
+                          <button className="secondary-button" onClick={downloadSummary}>
+                            <Download size={15} /> Download .txt
+                          </button>
+                        </div>
                       </div>
-                      <h4>You're ready to summarize</h4>
-                      <p>
-                        Your interface is set up for a{" "}
-                        <strong>{summaryLength.toLowerCase()}</strong> summary in{" "}
-                        <strong>{summaryStyle.toLowerCase()}</strong> format.
-                      </p>
-                      <div className="preview-warning">
-                        Notes:{" "}
-                        {summaryFile
-                          ? summaryFile.name
-                          : summaryText
-                          ? summaryText.slice(0, 40) + "..."
-                          : "General notes summary"}
-                      </div>
-                      <button
-                        className="secondary-button"
-                        onClick={copySummary}
-                      >
-                        <Copy size={15} /> Copy placeholder
-                      </button>
                     </div>
                   ) : (
                     <div className="result-empty">
