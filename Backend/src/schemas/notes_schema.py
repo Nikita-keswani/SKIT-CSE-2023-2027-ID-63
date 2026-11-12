@@ -12,9 +12,16 @@ class UploadResponse(BaseModel):
 class SummaryRequest(BaseModel):
     max_words: int = Field(
         default=500,
-        ge=100,
+        ge=50,
         le=3000
     )
+    style: Optional[str] = Field(default="Study notes")
+
+
+class TextSummaryRequest(BaseModel):
+    text: str = Field(..., min_length=10)
+    max_words: Optional[int] = Field(default=500, ge=50, le=3000)
+    style: Optional[str] = Field(default="Study notes")
 
 
 class SummaryResponse(BaseModel):

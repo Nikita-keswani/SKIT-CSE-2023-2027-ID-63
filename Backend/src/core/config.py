@@ -47,6 +47,8 @@ class Settings(BaseSettings):
 
     # PDF RAG
     PDF_RAG_MAX_FILE_SIZE_MB: int = 20
+    MAX_FILE_SIZE_MB: int = 20
+    TOP_K: int = 4
 
     model_config = SettingsConfigDict(
         env_file=".env",

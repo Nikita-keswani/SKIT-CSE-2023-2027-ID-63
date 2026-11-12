@@ -108,6 +108,59 @@ class NotesService:
             )
         )
 
+    def summarize_document(
+        self,
+        document_id: str,
+        user_id: str,
+        max_words: int = 500,
+        style: str = "Study notes"
+    ) -> dict:
+        from langchain_core.documents import Document
+
+        texts = []
+        try:
+            results = self.ingestion_service.vector_store.vector_store.get(
+                where={"document_id": document_id}
+            )
+            texts = results.get("documents", [])
+        except Exception as err:
+            print(f"[NOTES] Vector store lookup error: {err}")
+
+        if not texts:
+            upload_dir = Path("data/uploads")
+            matches = list(upload_dir.glob(f"{document_id}_*"))
+            if matches:
+                docs = self.ingestion_service._load_file(str(matches[0]))
+                texts = [d.page_content for d in docs]
+
+        if not texts:
+            raise ValueError(f"No document content found for id {document_id}")
+
+        documents = [Document(page_content=t) for t in texts]
+        return self.summarization_service.summarize_structured(
+            documents=documents,
+            max_words=max_words,
+            style=style,
+            document_id=document_id
+        )
+
+    def summarize_text(
+        self,
+        text: str,
+        max_words: int = 500,
+        style: str = "Study notes"
+    ) -> dict:
+        from langchain_core.documents import Document
+
+        doc = Document(page_content=text)
+        chunks = self.ingestion_service.rag_pipeline.split_documents([doc])
+        return self.summarization_service.summarize_structured(
+            documents=chunks if chunks else [doc],
+            max_words=max_words,
+            style=style,
+            document_id=self.generate_document_id()
+        )
+
     def ask(
         self,
         question: str,
