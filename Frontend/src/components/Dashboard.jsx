@@ -28,6 +28,7 @@ import {
   Download,
 } from "lucide-react";
 import { uploadNotes, summarizeDocument, summarizeText } from "../api/notes";
+import { uploadPdf, askPdf } from "../api/pdfRag";
 import "../styles.css";
 
 const initialHistory = [
@@ -49,8 +50,11 @@ export default function Dashboard({ user, onLogout }) {
 
   const [pdfFile, setPdfFile] = useState(null);
   const [indexed, setIndexed] = useState(false);
+  const [isIndexingPdf, setIsIndexingPdf] = useState(false);
+  const [pdfDocId, setPdfDocId] = useState(null);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
+  const [isAskingPdf, setIsAskingPdf] = useState(false);
 
   const [toast, setToast] = useState("");
   const [search, setSearch] = useState("");
@@ -79,6 +83,7 @@ export default function Dashboard({ user, onLogout }) {
     if (f) {
       setPdfFile(f);
       setIndexed(false);
+      setPdfDocId(null);
       setMessages([]);
     }
   };
@@ -121,31 +126,64 @@ export default function Dashboard({ user, onLogout }) {
     }
   };
 
-  const indexPdf = () => {
+  const indexPdf = async () => {
     if (!pdfFile) return notify("Choose a PDF before continuing.");
-    setIndexed(true);
-    setMessages([
-      {
-        role: "assistant",
-        text: `PDF "${pdfFile.name}" is prepared! You can now ask questions about its content.`,
-      },
-    ]);
-    notify("PDF prepared successfully.");
+    setIsIndexingPdf(true);
+    notify("Indexing PDF with vector embeddings...");
+
+    try {
+      const res = await uploadPdf(pdfFile);
+      setPdfDocId(res.document_id);
+      setIndexed(true);
+      setMessages([
+        {
+          role: "assistant",
+          text: `PDF "${pdfFile.name}" (${res.pages || "?"} pages, ${res.chunks || "?"} chunks) has been prepared and indexed! You can now ask questions about its content.`,
+          sources: [],
+        },
+      ]);
+      notify("PDF prepared successfully!");
+    } catch (err) {
+      console.error("PDF index error:", err);
+      notify(err.message || "Failed to prepare PDF. Check backend.");
+    } finally {
+      setIsIndexingPdf(false);
+    }
   };
 
-  const sendQuestion = () => {
+  const sendQuestion = async () => {
     if (!question.trim()) return;
-    if (!indexed) return notify("Upload and prepare a PDF first.");
+    if (!indexed || !pdfDocId) return notify("Upload and prepare a PDF first.");
+
     const q = question.trim();
-    setMessages((m) => [
-      ...m,
-      { role: "user", text: q },
-      {
-        role: "assistant",
-        text: `Based on your document "${pdfFile?.name || "PDF"}", here is the explanation for: "${q}". The key concepts and definitions have been retrieved from the document context.`,
-      },
-    ]);
     setQuestion("");
+    setMessages((m) => [...m, { role: "user", text: q }]);
+    setIsAskingPdf(true);
+
+    try {
+      const res = await askPdf(pdfDocId, q);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: res.answer,
+          sources: res.sources || [],
+        },
+      ]);
+    } catch (err) {
+      console.error("Ask PDF error:", err);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: `Error retrieving answer: ${err.message || "Backend error"}.`,
+          sources: [],
+        },
+      ]);
+      notify("Failed to get answer.");
+    } finally {
+      setIsAskingPdf(false);
+    }
   };
 
   const copySummary = async () => {
@@ -931,9 +969,13 @@ export default function Dashboard({ user, onLogout }) {
                   <button
                     className="primary-button full-button"
                     onClick={indexPdf}
-                    disabled={!pdfFile || indexed}
+                    disabled={!pdfFile || indexed || isIndexingPdf}
                   >
-                    {indexed ? (
+                    {isIndexingPdf ? (
+                      <>
+                        <div className="button-spinner" /> Preparing document...
+                      </>
+                    ) : indexed ? (
                       <>
                         <Check size={17} /> PDF ready
                       </>
@@ -984,8 +1026,10 @@ export default function Dashboard({ user, onLogout }) {
                       <h3>Document assistant</h3>
                       <span>
                         <i />{" "}
-                        {indexed
-                          ? "PDF selected · UI preview"
+                        {isIndexingPdf
+                          ? "Indexing PDF..."
+                          : indexed
+                          ? `${pdfFile?.name || "PDF"} · Ready to answer`
                           : "Ready when you are"}
                       </span>
                     </div>
@@ -1051,15 +1095,33 @@ export default function Dashboard({ user, onLogout }) {
                                 {m.role === "user" ? "You" : "Studywise AI"}
                               </span>
                               <p>{m.text}</p>
-                              {m.role === "assistant" && (
+                              {m.role === "assistant" && m.sources && m.sources.length > 0 && (
                                 <div className="source-reference">
-                                  <FileText size={13} /> Source citations will
-                                  appear here after integration.
+                                  <FileText size={13} />
+                                  <span>
+                                    Sources:{" "}
+                                    {m.sources
+                                      .filter((s) => s.page !== undefined && s.page !== null)
+                                      .map((s) => `Page ${s.page}`)
+                                      .filter((v, idx, arr) => arr.indexOf(v) === idx)
+                                      .join(", ") || "Document passages"}
+                                  </span>
                                 </div>
                               )}
                             </div>
                           </div>
                         ))}
+                        {isAskingPdf && (
+                          <div className="message assistant">
+                            <div className="message-avatar">
+                              <Sparkles size={15} />
+                            </div>
+                            <div className="message-content">
+                              <span className="message-author">Studywise AI</span>
+                              <p className="thinking-text">Searching document and generating answer...</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1078,7 +1140,7 @@ export default function Dashboard({ user, onLogout }) {
                           ? "Ask something about your PDF…"
                           : "Upload and prepare a PDF to begin…"
                       }
-                      disabled={!indexed}
+                      disabled={!indexed || isAskingPdf}
                       rows={2}
                     />
                     <div className="composer-bottom">
@@ -1088,7 +1150,7 @@ export default function Dashboard({ user, onLogout }) {
                       <button
                         className="send-button"
                         onClick={sendQuestion}
-                        disabled={!indexed || !question.trim()}
+                        disabled={!indexed || !question.trim() || isAskingPdf}
                         aria-label="Send question"
                       >
                         <Send size={16} />
@@ -1190,4 +1252,5 @@ export default function Dashboard({ user, onLogout }) {
       )}
     </div>
   );
+}
 }
